@@ -1,0 +1,114 @@
+service: Veterinarian-Hospital-Data-API
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-1
+  iamManagedPolicies:
+    - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+  environment:
+    REGION: ${opt:region, self:provider.region}
+    IS_OFFLINE: true
+
+package:
+  exclude:
+    - .build/**
+    - "*/**"
+  individually: true
+functions:
+  create:
+    handler: functions/Patient.createPatient
+    package:
+      include:
+        - functions/Patient.ts
+    events:
+      - http:
+          path: patient
+          method: post
+  getAllPatient:
+    handler: functions/Patient.getAllPatient
+    package:
+      include:
+        - functions/Patient.ts
+    events:
+      - http:
+          path: patient
+          method: get
+  getPatientById:
+    handler: functions/Patient.getPatientById
+    package:
+      include:
+        - functions/Patient.ts
+    events:
+      - http:
+          path: patient/{patientId}
+          method: get
+  updatePatientById:
+    handler: functions/Patient.updatePatientById
+    package:
+      include:
+        - functions/Patient.ts
+    events:
+      - http:
+          path: patient/{patientId}
+          method: put
+  deletePatientById:
+    handler: functions/Patient.deletePatientById
+    package:
+      include:
+        - functions/Patient.ts
+    events:
+      - http:
+          path: patient/{patientId}
+          method: delete
+  createAppointment:
+    handler: functions/Appointment.createAppointment
+    package:
+      include:
+        - functions/Appointment.ts
+    events:
+      - http:
+          path: appointment
+          method: post
+
+plugins:
+  - serverless-offline
+  - serverless-plugin-typescript
+  - serverless-dynamodb-local
+custom:
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 9000
+      inMemory: false
+      migrate: true
+
+resources: # CloudFormation template syntax
+  Resources:
+    patientTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: patients
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    AppointmentTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: appointments
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
